@@ -39,6 +39,9 @@ export class SyncSocket {
   private m_ackHello = new Subject<string>();
   private m_bPassthru:boolean;
 
+  public get RawSocket() { return this.m_socketio; }
+  public get SessionId() { return this.m_sessionId; }
+
   constructor(socketio: Socketio.Socket | SocketIOClient.Socket, bPassthuru: boolean = false){
     this.m_socketio = socketio;
     this.m_bPassthru = bPassthuru;
@@ -53,6 +56,8 @@ export class SyncSocket {
     });
 
     this.m_socketio.on("$hello", (id: string)=>{
+      this.log(`hello: ${id}`);
+      this.m_sessionId = id;
       this.m_socketio.emit("$hello-ack", id);
     });
 
@@ -61,19 +66,19 @@ export class SyncSocket {
     });
 
     this.m_socketio.on("$message", (message: message_t)=>{
-      this.log(`receive:${message.index}`);
-      if(message.index != this.m_lastReceiveMessageIndex){
-        this.m_message.next(message);
-        this.m_lastReceiveMessageIndex = message.index;
-        this.log(`receive:${message.index}:proceed`);
-      }
-      else{
-        this.log(`receive:${message.index}:already received`);
-      }
+      this.log(`receive (${message.index})`);
       const ack: ack_t = {
         index: message.index
       };
       this.m_socketio.emit("$ack", ack);
+      if(message.index != this.m_lastReceiveMessageIndex){
+        this.m_lastReceiveMessageIndex = message.index;
+        this.log(`receive (${message.index}) : proceed`);
+        this.m_message.next(message);
+      }
+      else{
+        this.log(`receive (${message.index}) :already proceeded`);
+      }
     });
   }
 
@@ -91,6 +96,7 @@ export class SyncSocket {
       }
   
       const timer = setInterval(()=>{
+        this.log(`hello : retry`);
         this.m_socketio.emit("$hello", this.m_sessionId);
       }, 1000);
 
@@ -111,6 +117,7 @@ export class SyncSocket {
       },
       ()=>{
       });
+      this.log(`hello : send`);
       this.m_socketio.emit("$hello", this.m_sessionId);
     });
   }
@@ -137,7 +144,7 @@ export class SyncSocket {
   public emit(event: string, body: any){
     this.m_messageIndex++;
     const index = this.m_messageIndex;
-    this.log(`emit:${index}`);
+    this.log(`emit (${index})`);
 
     return new Promise((resolve, reject)=>{
       if(this.m_bPassthru){
@@ -152,7 +159,7 @@ export class SyncSocket {
         body: body
       };
       const timer = setInterval(()=>{
-        this.log(`emit:${index}:retry`);
+        this.log(`emit (${index}) : retry`);
         this.m_socketio.emit("$message", message);
       }, 1000);
 
@@ -166,17 +173,17 @@ export class SyncSocket {
       .pipe(take(1))
       .subscribe(()=>{
         clearInterval(timer);
-        this.log(`emit:${index}:success`);
+        this.log(`emit (${index}) : success`);
         resolve(index);
       },
       (err)=>{
-        this.log(`emit:${index}:error`);
+        this.log(`emit (${index}) : error`);
         reject(err)
       },
       ()=>{
       });
   
-      this.log(`emit:${index}:send`);
+      this.log(`emit (${index}) : send`);
       this.m_socketio.emit("$message", message);
     });
   }

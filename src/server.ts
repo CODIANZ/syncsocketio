@@ -11,10 +11,10 @@ const socketio = Socketio(http);
 express.use(Express.static(path.resolve(__dirname, "../html")));
 
 socketio.on("connect", (ss: Socketio.Socket)=>{
-  const s = new SyncSocket(ss, false);
-  s.on("reqest", (m: string)=>{
+  const s = new SyncSocket(ss);
+  s.on("message", (m: string)=>{
     console.log(m);
-    s.emit("response", m)
+    s.emit("response", `response ${m}`)
     .then(()=>{
       console.log("send success");
     })
