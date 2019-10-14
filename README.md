@@ -90,18 +90,6 @@ syncsocket.onSolcitedMessage("solicited message", (index: number, messagebody: a
 ### 4. 返却されるPromiseでrejectになるのは、明示的に disconnect が処理された場合のみであり、通常のネットワークの瞬停はrejectされません。
 
 
-## javascript での使用方法
-
-syncsocket TypeScript により実装されています。<br>
-javascript で使用する場合には
-
-1. 下記の要領でビルドを行います。
-    ```sh
-    $ npm i
-    $ npm run build
-    ```
-1. javascript では ./dist/syncsocket.js を require します。
-
 ## ビルド・テスト
 
 1. 下記の要領でビルドを行います。
@@ -123,3 +111,8 @@ javascript で使用する場合には
 また、サーバは請求を受信した１秒後に、サーバからの請求メッセージが送信されます。
 
 1. 5 と 6 を連続して押下して、送受信が正しいものかを確認します。
+
+## javascript での使用方法
+
+syncsocket TypeScript により実装されています。<br>
+javascript で使用する場合には、 ./dist/syncsocket.js を require して使用します。
