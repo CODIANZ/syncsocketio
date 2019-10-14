@@ -16,8 +16,35 @@ socketio.on("connect", (ss: Socketio.Socket)=>{
     console.log(m);
     s.emit("response", `response ${m}`)
     .then(()=>{
-      console.log("send success");
+      console.log("send successful");
     })
+    .catch((err)=>{
+      console.error(`send error ${err}`);
+    });
+  });
+
+  s.onSolcitedMessage("message", (index, body)=>{
+    console.log(`solicited message : (${index})`);
+    setTimeout(()=>{
+      s.emitSolicitedResponse(index, "response", `response ${body}`)
+      .then(()=>{
+        console.log(`send solicited response successful (${index})`);
+      })
+      .catch((err)=>{
+        console.error(`send solicited response error ${err}`);
+      });
+    }, 5000);
+    setTimeout(()=>{
+      const m = `${new Date()}`;
+      console.log(`send solicited message ${m}`);
+      s.emitSolicitedMessageAndWaitResponse("message", m)
+      .then((x)=>{
+        console.log(`send & receive solicited message successful (${JSON.stringify(x)})`);
+      })
+      .catch((err)=>{
+        console.error(`send & receive solicited message error ${err}`);
+      });
+    }, 1000);
   });
 });
 
