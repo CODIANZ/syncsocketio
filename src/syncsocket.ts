@@ -33,7 +33,7 @@ const reserved_events = [
   "reconnect_failed"
 ];
 
-export class SyncSocket {
+export class SyncSocketIO {
   private m_socketio: Socketio.Socket | SocketIOClient.Socket;
   private m_sessionId: string = "(unknown)";
   private m_messageIndex: number = 0;

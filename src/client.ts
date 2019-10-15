@@ -1,13 +1,13 @@
 import "jquery";
 import socketio from "socket.io-client";
-import { SyncSocket } from "./syncsocket";
+import { SyncSocketIO } from "./syncsocket";
 
-let g_socket: SyncSocket | undefined;
+let g_socket: SyncSocketIO | undefined;
 
 $(document).ready(()=>{
   $("#hello").on("click", ()=>{
     let ss = socketio(`${location.host}`);
-    g_socket = new SyncSocket(ss);
+    g_socket = new SyncSocketIO(ss);
     g_socket.on("response", (m: string)=>{
       log(`[response] ${m}`);
     });
