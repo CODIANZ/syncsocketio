@@ -1,6 +1,6 @@
 import "jquery";
 import socketio from "socket.io-client";
-import { SyncSocketIO } from "./syncsocket";
+import { SyncSocketIO } from "./syncsocketio";
 
 let g_socket: SyncSocketIO | undefined;
 
