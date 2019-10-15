@@ -1,4 +1,4 @@
-# syncsocket
+# syncsocketio
 
 ## 概要
 
@@ -10,7 +10,7 @@
 
 一般的な同期通信では、請求・請求応答で一連の処理が順次行われ、シグナル的な目的で非請求応答が行われます。
 
-上記を踏まえ、 syncsocket は socket.io に下記の拡張を行います。
+上記を踏まえ、 syncsocketio は socket.io に下記の拡張を行います。
 
 ### 1. 到達保証
 
@@ -33,26 +33,26 @@ socket.io の emit() および on() については完全な互換性があり�
 ### 1. インスタンスの生成と非請求応答は下記のように実装します。（ほぼsocket.ioと変わりません）
 ```typescript
 import Express = require("express");
-import Socketio = require("socket.io");
+import SocketIO = require("socket.io");
 import Http = require("http");
-import { SyncSocket } from "./syncsocket";
+import { SyncSocketIO } from "syncsocketio";
 
 const express = Express();
 const http = Http.createServer(express);
-const socketio = Socketio(http);
+const socketio = SocketIO(http);
 
-socketio.on("connect", (socket: Socketio.Socket)=>{
-    const syncsocket = new SyncSocket(socket);
+socketio.on("connect", (socket: SocketIO.Socket)=>{
+    const syncsocketio = new SyncSocketIO(socket);
 
     /* socket.io の on() と同様 */
-    syncsocket.on("some receive event", (message: any)=>{
+    syncsocketio.on("some receive event", (message: any)=>{
     });
 
     /* socket.io の emit() と同様（ただし、メッセージが届くまで再送を行います） */
-    syncsocket.emit("some message event", messagebody);
+    syncsocketio.emit("some message event", messagebody);
 
     /* emit() 後に相手方の到達が確認できると resolve する Promise が返却されます */
-    syncsocket.emit("some message event", messagebody)
+    syncsocketio.emit("some message event", messagebody)
     .then(()=>{
         /* 成功 */
     })
@@ -64,7 +64,7 @@ socketio.on("connect", (socket: Socketio.Socket)=>{
 
 ### 2. 請求の送信および請求応答の受信は下記のように実装します。
 ```typescript
-syncsocket.emitSolicitedMessageAndWaitResponse("solicited message", messagebody)
+syncsocketio.emitSolicitedMessageAndWaitResponse("solicited message", messagebody)
 .then((response)=>{
     const event = response.event;
     const body = response.body;
@@ -73,11 +73,11 @@ syncsocket.emitSolicitedMessageAndWaitResponse("solicited message", messagebody)
 
 ### 3. 請求のの応答および請求応答の送信は下記のように実装します。
 ```typescript
-syncsocket.onSolcitedMessage("solicited message", (index: number, messagebody: any) => {
+syncsocketio.onSolcitedMessage("solicited message", (index: number, messagebody: any) => {
     /* index はどの請求かを特定するために使用するのでそのまま emitSolicitedResponse() に渡してください */
 
     /* 請求に対する応答を送信します */
-    syncsocket.emitSolicitedResponse(index, "event type", responsebody)
+    syncsocketio.emitSolicitedResponse(index, "event type", responsebody)
     .then(()=>{
         /* 成功 */
     })
@@ -88,31 +88,3 @@ syncsocket.onSolcitedMessage("solicited message", (index: number, messagebody: a
 ```
 
 ### 4. 返却されるPromiseでrejectになるのは、明示的に disconnect が処理された場合のみであり、通常のネットワークの瞬停はrejectされません。
-
-
-## ビルド・テスト
-
-1. 下記の要領でビルドを行います。
-    ```sh
-    $ npm i
-    $ npm run build
-    ```
-1. ビルド後に ./dist/server.js を実行します。
-
-1. http://localhost:50080/test.html を開きます。
-
-1. hello ボタンを押下します。
-
-1. unsolicited ボタンを押下します。<br>
-サーバは受信後、unsolicitedメッセージを送信します。
-
-1. solicited ボタンを押下します。<br>
-サーバは請求を受信した５秒後に、請求応答を送信します。<br>
-また、サーバは請求を受信した１秒後に、サーバからの請求メッセージが送信されます。
-
-1. 5 と 6 を連続して押下して、送受信が正しいものかを確認します。
-
-## javascript での使用方法
-
-syncsocket TypeScript により実装されています。<br>
-javascript で使用する場合には、 ./dist/syncsocket.js を require して使用します。

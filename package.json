@@ -1,8 +1,8 @@
 {
   "name": "syncsocketio",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "'syncsocket' makes ensurly reach the messages and treat the solicited messages.",
-  "main": "./dist/syncsocket.js",
+  "main": "./dist/syncsocketio.js",
   "scripts": {
     "build-test": "tsc && webpack --mode development",
     "build": "tsc",

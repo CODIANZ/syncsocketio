@@ -1,16 +1,16 @@
 import Express = require("express");
-import Socketio = require("socket.io");
+import SocketIO = require("socket.io");
 import Http = require("http");
 import * as path from "path";
-import { SyncSocketIO } from "./syncsocket";
+import { SyncSocketIO } from "./syncsocketio";
 
 const express = Express();
 const http = Http.createServer(express);
-const socketio = Socketio(http);
+const socketIO = SocketIO(http);
 
 express.use(Express.static(path.resolve(__dirname, "../html")));
 
-socketio.on("connect", (ss: Socketio.Socket)=>{
+socketIO.on("connect", (ss: SocketIO.Socket)=>{
   const s = new SyncSocketIO(ss);
   s.on("message", (m: string)=>{
     console.log(m);
