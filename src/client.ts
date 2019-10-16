@@ -12,9 +12,14 @@ $(document).ready(()=>{
     g_socket.onUnsolicitedMessage("response", (m: string)=>{
       log(`[response] ${m}`);
     });
+
     g_socket.onSolcitedMessage("message", (index, body)=>{
       log(`[receive] solicited message (${index}) ${body}`);
       setTimeout(()=>{
+        if(!g_socket){
+          log(`socket == null`);
+          return;
+        }
         g_socket!.emitSolicitedResponse(index, "response", `response ${body}`)
         .then(()=>{
           log(`[send] solicited response successful (${index})`);
@@ -25,17 +30,25 @@ $(document).ready(()=>{
       }, 5000);
     });
 
-    $("#dispose").on("click", ()=>{
+    $("#goodbye").on("click", ()=>{
       if(g_socket){
-        g_socket.goodbye();
-        g_socket = undefined;
+        g_socket.emitUnsolicitedMessage("sayonara!")
+        .then(()=>{
+          if(g_socket){
+            g_socket.goodbye();
+          }
+          g_socket = undefined;
+        })
+        .catch((err)=>{
+          log(`[goodbye] error ${err}`);
+        });
       }
     });
   });
 
   $("#emit-unsolicited").on("click", ()=>{
     if(!g_socket){
-      log(`[error] socket == null`);
+      log(`socket == null`);
       return;
     }
     g_socket.emitUnsolicitedMessage("message", $("#body").val() as string)

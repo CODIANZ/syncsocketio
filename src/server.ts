@@ -22,6 +22,11 @@ SyncSocketIO.waitForConnecting(socketIO, (syncsocketio)=>{
     });
   });
 
+  syncsocketio.onUnsolicitedMessage("sayonara!", ()=>{
+    console.log("goodbye from client");
+    syncsocketio.goodbye();
+  });
+
   syncsocketio.onSolcitedMessage("message", (index, body)=>{
     console.log(`solicited message : (${index})`);
     setTimeout(()=>{
@@ -48,7 +53,7 @@ SyncSocketIO.waitForConnecting(socketIO, (syncsocketio)=>{
 });
 
 
-http.listen(50080, "192.168.4.17", ()=>{
+http.listen(50080, "localhost", ()=>{
   console.log("server running");
 });
 

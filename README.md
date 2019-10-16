@@ -34,12 +34,12 @@ syncsocketioより送信するメッセージは Promise を返却し、到達�
 
 通信処理にはエラーが付き物ですが、この処理をロジックに組み込むとかなり厄介なコードになります。そこで、 syncsocketio はエラーが発生した場合、再送信処理を行い到達が確認できるまで繰り返します。
 
-逆に、通信状態の如何によらず、再送信を続けるため、タイムアウト処理は実装側で行い、適宜 goodbye により通信を終了していただく必要があります。
+逆に、通信状態の如何によらず、再送信を続けるため、タイムアウト処理は実装側で行い、適宜 goodbye により通信を明示的に終了する必要があります。
 
 
 ## 使用方法（サーバ）
 
-### インスタンスの生成と非請求応答は下記のように実装します。
+### インスタンスの生成は下記のように実装します。
 ```typescript
 import Express = require("express");
 import SocketIO = require("socket.io");
@@ -51,22 +51,12 @@ const http = Http.createServer(express);
 const socketio = SocketIO(http);
 
 SyncSocketIO.waitForConnecting(socketIO, (syncsocketio)=>{
-    /* 非請求応答の受信 */
-    syncsocketio.onUnsolicitedMessage("some receive event", (message: any)=>{
-    });
-
-    /* 非請求応答の送信 */
-    syncsocketio.emit("some message event", messagebody)
-    .then(()=>{
-        /* 成功 */
-    })
-    .catch(()=>{
-        /* 失敗 */
-    });
+    /* 以降、syncsocketioでやり取りを行います。 */
 });
 ```
 
 ## 使用方法（クライアント）
+### インスタンスの生成は下記のように実装します。
 ```typescript
 import socketio from "socket.io-client";
 import { SyncSocketIO } from "syncsocketio";
@@ -76,6 +66,22 @@ syncsocketio = SyncSocketIO.connect(socketio(uri)));
 ```
 
 ## 使用方法（サーバ・クライアント共通）
+
+### 非請求応答は下記のように実装します。
+```typescript
+/* 非請求応答の受信 */
+syncsocketio.onUnsolicitedMessage("some receive event", (message: any)=>{
+});
+
+/* 非請求応答の送信 */
+syncsocketio.emit("some message event", messagebody)
+.then(()=>{
+    /* 成功 */
+})
+.catch(()=>{
+    /* 失敗 */
+});
+```
 
 ### 請求の送信および請求応答の受信は下記のように実装します。
 ```typescript
@@ -102,10 +108,33 @@ syncsocketio.onSolcitedMessage("solicited message", (index: number, messagebody:
 });
 ```
 
-### 終了処理は下記のように実装します。
+### サーバからの終了
+サーバからの終了は、goodbye() を呼び出します。goodbye()は、socket.ioをdisconnectします。その後、クライアントは切断に反応し再接続を試みますが、既にサーバがgoodbyeをしていることを知ると、onSolicitedMessage や onUnsolicitedMessage のPromiseは reject されます。
+
 ```typescript
-/* socket.io の disconnect() および、Promise の reject 処理を行います。 */
-/* socket.io の disconnect() が通信の相手方に及ぼす影響は感知していない点に注意が必要です。 */
 syncsocketio.goodbye();
 ```
 
+### クライアントからの終了
+クライアントからの終了は、apiとして実装されていませんが、下記の実装により実現が可能です。
+
+#### クライアントの実装（非請求応答を使用した例です）
+```typescript
+syncsocketio.emitUnsolicitedMessage("sayonara!")
+.then(()=>{
+    if(syncsocketio){
+        syncsocketio.goodbye();
+    }
+})
+.catch((err)=>{
+    /* 既にサーバ側でgoodbyeが処理されている */
+});
+```
+
+#### サーバの実装例（上記のクライアントの実装の場合）
+```typescript
+syncsocketio.onUnsolicitedMessage("sayonara!", ()=>{
+    /* クライアントからのgoodbye要求受領 */
+    syncsocketio.goodbye();
+});
+```
