@@ -17,6 +17,11 @@ type ack_t = {
   index: number;
 }
 
+type hello_t = {
+  sessionId: string,
+  bFirst: boolean
+};
+
 export class SyncSocketIO {
   private m_socketio: Socketio.Socket | SocketIOClient.Socket;
   private m_sessionId: string;
@@ -32,18 +37,21 @@ export class SyncSocketIO {
   /* サーバ側の接続待機 */
   public static waitForConnecting(server: Socketio.Server, onConnect: (syncSocket: SyncSocketIO) => void){
     server.on("connect", (s)=>{
-      s.once("$hello", (id: string) =>{
-        if(id in SyncSocketIO.s_sockets){
-          const ssio = SyncSocketIO.s_sockets[id];
+      s.once("$hello", (hello: hello_t) =>{
+        if(hello.sessionId in SyncSocketIO.s_sockets){
+          const ssio = SyncSocketIO.s_sockets[hello.sessionId];
           ssio.m_socketio.removeAllListeners();
           ssio.m_socketio.disconnect();
           ssio.m_socketio = s;
           ssio.prepareObservers();
+          onConnect(ssio);
         }
         else{
-          const ssio = new SyncSocketIO(s, id);
-          SyncSocketIO.s_sockets[id] = ssio;
-          onConnect(ssio);
+          if(hello.bFirst){
+            const ssio = new SyncSocketIO(s, hello.sessionId);
+            SyncSocketIO.s_sockets[hello.sessionId] = ssio;
+            onConnect(ssio);
+          }
         }
       });
     });
@@ -53,32 +61,32 @@ export class SyncSocketIO {
   public static connect(socket: SocketIOClient.Socket){
     const sessionId = uuid();
     const ss = new SyncSocketIO(socket, sessionId);
-    ss.helloOnConnect();
-    return ss;
-  }
-
-  public helloOnConnect() {
-    this.m_socketio.on("connect", ()=>{
-      this.m_socketio.emit("$hello", this.m_sessionId);
+    let bFirst = true;
+    socket.on("connect", ()=>{
+      socket.emit("$hello", <hello_t>{
+        sessionId: sessionId,
+        bFirst: bFirst
+      });
+      bFirst = false;
     });
+
+    return ss;
   }
 
   public goodbye() {
     this.log("goodbye")
     if(this.m_sessionId in SyncSocketIO.s_sockets){
       delete SyncSocketIO.s_sockets[this.m_sessionId];
-      this.subjectsBroadcastError("goodbye");
-      this.m_socketio.removeAllListeners();
-      this.m_socketio.disconnect();
+      this.goodbyeInternal("goodbye");
     }
     else{
-      this.subjectsBroadcastError("goodbye");
-      this.m_socketio.removeAllListeners();
-      this.m_socketio.disconnect();
+      this.goodbyeInternal("goodbye");
     }
   }
 
-  private subjectsBroadcastError(reason: string){
+  private goodbyeInternal(reason: string){
+    this.m_socketio.removeAllListeners();
+    this.m_socketio.disconnect();
     this.m_ackMessage.error(new Error(reason));
     this.m_message.error(new Error(reason));
   }
@@ -124,6 +132,9 @@ export class SyncSocketIO {
     }))
     .subscribe((x)=>{
       f(x.body);
+    },
+    (err)=>{
+      this.log(`onUnsolicitedMessage: ${err}`)
     });
   }
 
@@ -136,18 +147,21 @@ export class SyncSocketIO {
     }))
     .subscribe((x)=>{
       f(x.index, x.body);
+    },
+    (err)=>{
+      this.log(`onUnsolicitedMessage: ${err}`)
     });
   }
 
-  public emitUnsolicitedMessage(event: string, body: any){
+  public emitUnsolicitedMessage(event: string, body?: any){
     return this.emitInternal(event, body, "unsolicitedMessage");
   }
 
-  public emitSolicitedResponse(index: number, event: string, body: any){
+  public emitSolicitedResponse(index: number, event: string, body?: any){
     return this.emitInternal(event, body, "solicitedResponse", index);
   }
 
-  public emitSolicitedMessageAndWaitResponse(event: string, body: any){
+  public emitSolicitedMessageAndWaitResponse(event: string, body?: any){
     return new Promise((resolve, reject)=>{
       const targetIndex = this.m_messageIndex + 1;
       this.m_message
@@ -169,7 +183,7 @@ export class SyncSocketIO {
     });
   }
 
-  private emitInternal(event: string, body: any, type: messageType_t, solicitedMessgeIndex?: number){
+  private emitInternal(event: string, body: any | undefined, type: messageType_t, solicitedMessgeIndex?: number){
     this.m_messageIndex++;
     const index = this.m_messageIndex;
     this.log(`emit (${index})`);
@@ -201,6 +215,7 @@ export class SyncSocketIO {
         resolve(index);
       },
       (err)=>{
+        clearInterval(timer);
         this.log(`emit (${index}) : error`);
         reject(err);
       },
