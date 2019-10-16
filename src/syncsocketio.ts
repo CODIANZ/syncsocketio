@@ -1,6 +1,6 @@
 import Socketio = require("socket.io");
 import { of, Subject, never } from 'rxjs';
-import { mergeMap, take, retryWhen, timeout, timeoutWith } from 'rxjs/operators';
+import { mergeMap, take } from 'rxjs/operators';
 import { v4 as uuid } from 'uuid';
 
 type messageType_t = "solicitedMessage" | "solicitedResponse" | "unsolicitedMessage";
@@ -17,56 +17,82 @@ type ack_t = {
   index: number;
 }
 
-type hello_t = {
-  sessionId: string;
-}
-
-const reserved_events = [
-  "connect",
-  "connection", /* server only */
-  "error",
-  "disconnect",
-  "reconnect",
-  "reconnect_attempt",
-  "reconnecting",
-  "reconnect_error",
-  "reconnect_failed"
-];
-
 export class SyncSocketIO {
   private m_socketio: Socketio.Socket | SocketIOClient.Socket;
-  private m_sessionId: string = "(unknown)";
+  private m_sessionId: string;
   private m_messageIndex: number = 0;
   private m_lastReceiveMessageIndex: number = 0;
   private m_ackMessage = new Subject<ack_t>();
   private m_message = new Subject<message_t>();
-  private m_ackHello = new Subject<string>();
-  private m_bPassthru:boolean;
 
-  public get RawSocket() { return this.m_socketio; }
   public get SessionId() { return this.m_sessionId; }
 
-  constructor(socketio: Socketio.Socket | SocketIOClient.Socket, bPassthuru: boolean = false){
-    this.m_socketio = socketio;
-    this.m_bPassthru = bPassthuru;
+  private static s_sockets: {[_:string]: SyncSocketIO} = {};
 
-    if(this.m_bPassthru){
-      this.log("construct with passthru");
-      return;
+  /* サーバ側の接続待機 */
+  public static waitForConnecting(server: Socketio.Server, onConnect: (syncSocket: SyncSocketIO) => void){
+    server.on("connect", (s)=>{
+      s.once("$hello", (id: string) =>{
+        if(id in SyncSocketIO.s_sockets){
+          const ssio = SyncSocketIO.s_sockets[id];
+          ssio.m_socketio.removeAllListeners();
+          ssio.m_socketio.disconnect();
+          ssio.m_socketio = s;
+          ssio.prepareObservers();
+        }
+        else{
+          const ssio = new SyncSocketIO(s, id);
+          SyncSocketIO.s_sockets[id] = ssio;
+          onConnect(ssio);
+        }
+      });
+    });
+  }
+
+  /* クライアントからの接続 */
+  public static connect(socket: SocketIOClient.Socket){
+    const sessionId = uuid();
+    const ss = new SyncSocketIO(socket, sessionId);
+    ss.helloOnConnect();
+    return ss;
+  }
+
+  public helloOnConnect() {
+    this.m_socketio.on("connect", ()=>{
+      this.m_socketio.emit("$hello", this.m_sessionId);
+    });
+  }
+
+  public goodbye() {
+    this.log("goodbye")
+    if(this.m_sessionId in SyncSocketIO.s_sockets){
+      delete SyncSocketIO.s_sockets[this.m_sessionId];
+      this.subjectsBroadcastError("goodbye");
+      this.m_socketio.removeAllListeners();
+      this.m_socketio.disconnect();
     }
+    else{
+      this.subjectsBroadcastError("goodbye");
+      this.m_socketio.removeAllListeners();
+      this.m_socketio.disconnect();
+    }
+  }
 
+  private subjectsBroadcastError(reason: string){
+    this.m_ackMessage.error(new Error(reason));
+    this.m_message.error(new Error(reason));
+  }
+
+  private constructor(socketio: Socketio.Socket | SocketIOClient.Socket, sessionId: string){
+    this.m_sessionId = sessionId;
+    this.m_socketio  = socketio;
+    this.log(`ctor sessionId = ${sessionId}`);
+    this.prepareObservers();
+  }
+
+  private prepareObservers(){
     this.m_socketio.on("$ack", (ack: ack_t)=>{
       this.m_ackMessage.next(ack);
-    });
-
-    this.m_socketio.on("$hello", (id: string)=>{
-      this.log(`hello: ${id}`);
-      this.m_sessionId = id;
-      this.m_socketio.emit("$hello-ack", id);
-    });
-
-    this.m_socketio.on("$hello-ack", (id: string)=>{
-      this.m_ackHello.next(id);
     });
 
     this.m_socketio.on("$message", (message: message_t)=>{
@@ -82,56 +108,14 @@ export class SyncSocketIO {
       else{
         this.log(`receive (${message.index}) : already received`);
       }
-    });
+    });    
   }
 
   private log(s: string){
-    console.log(`[${this.m_sessionId}] ${s}`);
+    console.log(`[${this.m_sessionId}:${this.m_socketio.id}] ${s}`);
   }
 
-  public hello(){
-    this.m_sessionId = uuid();
-    return new Promise((resolve, reject)=>{
-
-      if(this.m_bPassthru){
-        resolve(this.m_sessionId);
-        return;
-      }
-  
-      const timer = setInterval(()=>{
-        this.log(`hello : retry`);
-        this.m_socketio.emit("$hello", this.m_sessionId);
-      }, 1000);
-
-      this.m_ackHello
-      .pipe(mergeMap((x)=>{
-        if(x == this.m_sessionId){
-          return of(void 0);
-        }
-        return never();
-      }))
-      .pipe(take(1))
-      .subscribe(()=>{
-        clearTimeout(timer);
-        resolve(this.m_sessionId);
-      },
-      (err)=>{
-        reject(err);
-      },
-      ()=>{
-      });
-      this.log(`hello : send`);
-      this.m_socketio.emit("$hello", this.m_sessionId);
-    });
-  }
-
-  public on(event: string, f:(_:any)=>void){
-    if(this.m_bPassthru || (reserved_events.indexOf(event) >= 0)){
-      this.m_socketio.on(event, (x)=>{
-        f(x);
-      });
-      return;
-    }
+  public onUnsolicitedMessage(event: string, f:(_:any)=>void){
     this.m_message
     .pipe(mergeMap((x)=>{
       if(x.type != "unsolicitedMessage") return never();
@@ -144,12 +128,6 @@ export class SyncSocketIO {
   }
 
   public onSolcitedMessage(event: string, f:(index: number, _:any)=>void){
-    if(this.m_bPassthru || (reserved_events.indexOf(event) >= 0)){
-      this.m_socketio.on(event, (x)=>{
-        f(0, x);
-      });
-      return;
-    }
     this.m_message
     .pipe(mergeMap((x)=>{
       if(x.type != "solicitedMessage") return never();
@@ -161,7 +139,7 @@ export class SyncSocketIO {
     });
   }
 
-  public emit(event: string, body: any){
+  public emitUnsolicitedMessage(event: string, body: any){
     return this.emitInternal(event, body, "unsolicitedMessage");
   }
 
@@ -197,12 +175,6 @@ export class SyncSocketIO {
     this.log(`emit (${index})`);
 
     return new Promise((resolve, reject)=>{
-      if(this.m_bPassthru){
-        this.m_socketio.emit(event, body);
-        resolve(this.m_messageIndex);
-        return;
-      }
-
       const message: message_t = {
         index:  index,
         type:   type,
@@ -230,7 +202,7 @@ export class SyncSocketIO {
       },
       (err)=>{
         this.log(`emit (${index}) : error`);
-        reject(err)
+        reject(err);
       },
       ()=>{
       });

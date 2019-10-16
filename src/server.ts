@@ -10,11 +10,10 @@ const socketIO = SocketIO(http);
 
 express.use(Express.static(path.resolve(__dirname, "../html")));
 
-socketIO.on("connect", (ss: SocketIO.Socket)=>{
-  const s = new SyncSocketIO(ss);
-  s.on("message", (m: string)=>{
+SyncSocketIO.waitForConnecting(socketIO, (syncsocketio)=>{
+  syncsocketio.onUnsolicitedMessage("message", (m: string)=>{
     console.log(m);
-    s.emit("response", `response ${m}`)
+    syncsocketio.emitUnsolicitedMessage("response", `response ${m}`)
     .then(()=>{
       console.log("send successful");
     })
@@ -23,10 +22,10 @@ socketIO.on("connect", (ss: SocketIO.Socket)=>{
     });
   });
 
-  s.onSolcitedMessage("message", (index, body)=>{
+  syncsocketio.onSolcitedMessage("message", (index, body)=>{
     console.log(`solicited message : (${index})`);
     setTimeout(()=>{
-      s.emitSolicitedResponse(index, "response", `response ${body}`)
+      syncsocketio.emitSolicitedResponse(index, "response", `response ${body}`)
       .then(()=>{
         console.log(`send solicited response successful (${index})`);
       })
@@ -37,7 +36,7 @@ socketIO.on("connect", (ss: SocketIO.Socket)=>{
     setTimeout(()=>{
       const m = `${new Date()}`;
       console.log(`send solicited message ${m}`);
-      s.emitSolicitedMessageAndWaitResponse("message", m)
+      syncsocketio.emitSolicitedMessageAndWaitResponse("message", m)
       .then((x)=>{
         console.log(`send & receive solicited message successful (${JSON.stringify(x)})`);
       })
@@ -49,7 +48,7 @@ socketIO.on("connect", (ss: SocketIO.Socket)=>{
 });
 
 
-http.listen(50080, "localhost", ()=>{
+http.listen(50080, "192.168.4.17", ()=>{
   console.log("server running");
 });
 
