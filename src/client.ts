@@ -6,9 +6,10 @@ let g_socket: SyncSocketIO | undefined;
 
 $(document).ready(()=>{
   $("#hello").on("click", ()=>{
-    let ss = socketio(`${location.host}`);
-    g_socket = new SyncSocketIO(ss);
-    g_socket.on("response", (m: string)=>{
+    const ss = socketio(`${location.host}`);
+    g_socket = SyncSocketIO.connect(ss);
+
+    g_socket.onUnsolicitedMessage("response", (m: string)=>{
       log(`[response] ${m}`);
     });
     g_socket.onSolcitedMessage("message", (index, body)=>{
@@ -24,11 +25,11 @@ $(document).ready(()=>{
       }, 5000);
     });
 
-    g_socket.on("connect", ()=>{
-      g_socket!.hello()
-      .then((x)=>{
-        log(`[hello] ok ${x}`);
-      });
+    $("#dispose").on("click", ()=>{
+      if(g_socket){
+        g_socket.goodbye();
+        g_socket = undefined;
+      }
     });
   });
 
@@ -37,7 +38,7 @@ $(document).ready(()=>{
       log(`[error] socket == null`);
       return;
     }
-    g_socket.emit("message", $("#body").val() as string)
+    g_socket.emitUnsolicitedMessage("message", $("#body").val() as string)
     .then((x)=>{
       log(`[send] (${x}) successful`);
     })
