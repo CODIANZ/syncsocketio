@@ -1,7 +1,7 @@
 {
   "name": "syncsocketio",
-  "version": "0.2.1",
-  "description": "'syncsocket' makes ensurly reach the messages and treat the solicited messages.",
+  "version": "0.2.2",
+  "description": "'syncsocketio' makes ensurly reach the messages and treat the solicited messages.",
   "main": "./dist/syncsocketio.js",
   "scripts": {
     "build-test": "tsc && webpack --mode development",
@@ -23,7 +23,8 @@
     "guarantee",
     "ensure",
     "reach",
-    "synchronous"
+    "synchronous",
+    "reconnect"
   ],
   "dependencies": {
     "rxjs": "^6.5.3",
