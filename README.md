@@ -52,6 +52,7 @@ const socketio = SocketIO(http);
 
 SyncSocketIO.waitForConnecting(socketIO, (syncsocketio)=>{
     /* 以降、syncsocketioでやり取りを行います。 */
+    /* クライアントからの再接続処理についてはケアする必要はありません。 */
 });
 ```
 
@@ -92,7 +93,7 @@ syncsocketio.emitSolicitedMessageAndWaitResponse("solicited message", messagebod
 });
 ```
 
-### 請求のの応答および請求応答の送信は下記のように実装します。
+### 請求の応答および請求応答の送信は下記のように実装します。
 ```typescript
 syncsocketio.onSolcitedMessage("solicited message", (index: number, messagebody: any) => {
     /* index はどの請求かを特定するために使用するのでそのまま emitSolicitedResponse() に渡してください */
