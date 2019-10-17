@@ -179,7 +179,13 @@ export class SyncSocketIO {
       },
       () => {
       });
-      this.emitInternal(event, body, "solicitedMessage");
+      this.emitInternal(event, body, "solicitedMessage")
+      .then(()=>{
+        this.log("emitSolicitedMessageAndWaitResponse emit success");
+      })
+      .catch((err)=>{
+        this.log(`emitSolicitedMessageAndWaitResponse emit error ${err}`);
+      });
     });
   }
 
