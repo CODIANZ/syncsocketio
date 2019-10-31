@@ -75,7 +75,7 @@ syncsocketio.onUnsolicitedMessage("some receive event", (message: any)=>{
 });
 
 /* 非請求応答の送信 */
-syncsocketio.emit("some message event", messagebody)
+syncsocketio.emitUnsolicitedMessage("some message event", messagebody)
 .then(()=>{
     /* 成功 */
 })

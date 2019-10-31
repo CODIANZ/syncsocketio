@@ -123,6 +123,34 @@ export class SyncSocketIO {
     console.log(`[${this.m_sessionId}:${this.m_socketio.id}] ${s}`);
   }
 
+  public onUnsolicitedMessageAll(f:(_: message_t)=>void){
+    this.m_message
+    .pipe(mergeMap((x)=>{
+      if(x.type != "unsolicitedMessage") return never();
+      return of(x);
+    }))
+    .subscribe((x)=>{
+      f(x);
+    },
+    (err)=>{
+      this.log(`onUnsolicitedMessage: ${err}`)
+    });
+  }
+
+  public onSolcitedMessageAll(f:(_: message_t)=>void){
+    this.m_message
+    .pipe(mergeMap((x)=>{
+      if(x.type != "solicitedMessage") return never();
+      return of(x);
+    }))
+    .subscribe((x)=>{
+      f(x);
+    },
+    (err)=>{
+      this.log(`onUnsolicitedMessage: ${err}`)
+    });
+  }
+
   public onUnsolicitedMessage(event: string, f:(_:any)=>void){
     this.m_message
     .pipe(mergeMap((x)=>{
