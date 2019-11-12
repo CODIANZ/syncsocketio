@@ -44,7 +44,6 @@ export class SyncSocketIO {
           ssio.m_socketio.disconnect();
           ssio.m_socketio = s;
           ssio.prepareObservers();
-          onConnect(ssio);
         }
         else{
           if(hello.bFirst){
