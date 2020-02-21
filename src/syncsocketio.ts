@@ -34,6 +34,15 @@ export class SyncSocketIO {
 
   private static s_sockets: {[_:string]: SyncSocketIO} = {};
 
+  /* interfaces for debugging */
+  public static get _debug_sockets() { return SyncSocketIO.s_sockets; }
+  public get _debug_socketio() { return this.m_socketio; }
+  public get _debug_sessionId() { return this.m_sessionId; }
+  public get _debug_messageIndex() { return this.m_messageIndex; }
+  public get _debug_lastReceiveMessageIndex() { return this.m_lastReceiveMessageIndex; }
+  public get _debug_ackMessage() { return this.m_ackMessage; }
+  public get _debug_message() { return this.m_message; }
+
   /* サーバ側の接続待機 */
   public static waitForConnecting(server: Socketio.Server, onConnect: (syncSocket: SyncSocketIO) => void){
     server.on("connect", (s)=>{
