@@ -1,6 +1,6 @@
 import Socketio = require("socket.io");
 import { of, Subject, never } from 'rxjs';
-import { mergeMap, take } from 'rxjs/operators';
+import { mergeMap, take, map } from 'rxjs/operators';
 import { v4 as uuid } from 'uuid';
 
 type messageType_t = "solicitedMessage" | "solicitedResponse" | "unsolicitedMessage";
@@ -23,6 +23,9 @@ type hello_t = {
 };
 
 export class SyncSocketIO {
+  private static s_sockets: {[_:string]: SyncSocketIO} = {};
+  public static get Sockets() { return SyncSocketIO.s_sockets; }
+
   private m_socketio: Socketio.Socket | SocketIOClient.Socket;
   private m_sessionId: string;
   private m_messageIndex: number = 0;
@@ -30,18 +33,10 @@ export class SyncSocketIO {
   private m_ackMessage = new Subject<ack_t>();
   private m_message = new Subject<message_t>();
 
+  private m_pendingSolicitedMessages: {[_:number]: message_t} = {};
+  public get PendingSolicitedMessages() { return this.m_pendingSolicitedMessages; }
+
   public get SessionId() { return this.m_sessionId; }
-
-  private static s_sockets: {[_:string]: SyncSocketIO} = {};
-
-  /* interfaces for debugging */
-  public static get _debug_sockets() { return SyncSocketIO.s_sockets; }
-  public get _debug_socketio() { return this.m_socketio; }
-  public get _debug_sessionId() { return this.m_sessionId; }
-  public get _debug_messageIndex() { return this.m_messageIndex; }
-  public get _debug_lastReceiveMessageIndex() { return this.m_lastReceiveMessageIndex; }
-  public get _debug_ackMessage() { return this.m_ackMessage; }
-  public get _debug_message() { return this.m_message; }
 
   /* サーバ側の接続待機 */
   public static waitForConnecting(server: Socketio.Server, onConnect: (syncSocket: SyncSocketIO) => void){
@@ -88,7 +83,7 @@ export class SyncSocketIO {
       this.goodbyeInternal("goodbye");
     }
     else{
-      this.goodbyeInternal("goodbye");
+      this.goodbyeInternal("goodbye (unmanaged session)");
     }
   }
 
@@ -104,6 +99,17 @@ export class SyncSocketIO {
     this.m_socketio  = socketio;
     this.log(`ctor sessionId = ${sessionId}`);
     this.prepareObservers();
+    this.m_message
+    .pipe(map((x)=>{
+      if(x.type == "solicitedMessage"){
+        this.m_pendingSolicitedMessages[x.index] = x;
+      }
+    }))
+    .subscribe((x)=>{
+    },
+    (err)=>{
+      this.log(`onUnsolicitedMessage: ${err}`)
+    });
   }
 
   private prepareObservers(){
@@ -194,6 +200,12 @@ export class SyncSocketIO {
   }
 
   public emitSolicitedResponse(index: number, event: string, body?: any){
+    if(index in this.m_pendingSolicitedMessages){
+      delete this.m_pendingSolicitedMessages[index];
+    }
+    else{
+      this.log(`emitSolicitedResponse missing index ${index}`);
+    }
     return this.emitInternal(event, body, "solicitedResponse", index);
   }
 
