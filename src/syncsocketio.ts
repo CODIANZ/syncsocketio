@@ -22,11 +22,28 @@ type hello_t = {
   bFirst: boolean
 };
 
+type config_t = {
+  bEnableLog: boolean,
+  timeoutSeconds: number,
+  retryIntervalSeconds: number
+}
+
+//type socketio_t = Socketio.Socket | SocketIOClient.Socket;
+type socketio_t = any;
+
 export class SyncSocketIO {
   private static s_sockets: {[_:string]: SyncSocketIO} = {};
   public static get Sockets() { return SyncSocketIO.s_sockets; }
 
-  private m_socketio: Socketio.Socket | SocketIOClient.Socket;
+  private static s_config: config_t = {
+    bEnableLog: false,
+    timeoutSeconds: 15,
+    retryIntervalSeconds: 5
+  };
+  public set Config(config: config_t) { SyncSocketIO.s_config = config; }
+  public get Config() { return SyncSocketIO.s_config; }
+
+  private m_socketio: socketio_t;
   private m_sessionId: string;
   private m_messageIndex: number = 0;
   private m_lastReceiveMessageIndex: number = 0;
@@ -94,7 +111,7 @@ export class SyncSocketIO {
     this.m_message.error(new Error(reason));
   }
 
-  private constructor(socketio: Socketio.Socket | SocketIOClient.Socket, sessionId: string){
+  private constructor(socketio: socketio_t, sessionId: string){
     this.m_sessionId = sessionId;
     this.m_socketio  = socketio;
     this.log(`ctor sessionId = ${sessionId}`);
@@ -108,7 +125,7 @@ export class SyncSocketIO {
     .subscribe((x)=>{
     },
     (err)=>{
-      this.log(`onUnsolicitedMessage: ${err}`)
+      this.log(`ctor pendingSolicitedMessage: ${err}`)
     });
   }
 
@@ -134,7 +151,9 @@ export class SyncSocketIO {
   }
 
   private log(s: string){
-    console.log(`[${this.m_sessionId}:${this.m_socketio.id}] ${s}`);
+    if(SyncSocketIO.s_config.bEnableLog){
+      console.log(`[${this.m_sessionId}:${this.m_socketio.id}] ${s}`);
+    }
   }
 
   public onUnsolicitedMessageAll(f:(_: message_t)=>void){
@@ -147,7 +166,7 @@ export class SyncSocketIO {
       f(x);
     },
     (err)=>{
-      this.log(`onUnsolicitedMessage: ${err}`)
+      this.log(`onUnsolicitedMessageAll: ${err}`)
     });
   }
 
@@ -161,7 +180,7 @@ export class SyncSocketIO {
       f(x);
     },
     (err)=>{
-      this.log(`onUnsolicitedMessage: ${err}`)
+      this.log(`onSolcitedMessageAll: ${err}`)
     });
   }
 
@@ -191,7 +210,7 @@ export class SyncSocketIO {
       f(x.index, x.body);
     },
     (err)=>{
-      this.log(`onUnsolicitedMessage: ${err}`)
+      this.log(`onSolcitedMessage: ${err}`)
     });
   }
 
@@ -250,10 +269,16 @@ export class SyncSocketIO {
         event:  event,
         body:   body
       };
-      const timer = setInterval(()=>{
+
+      const timer_retry = setInterval(()=>{
         this.log(`emit (${index}) : retry`);
         this.m_socketio.emit("$message", message);
-      }, 1000);
+      }, 1000 * SyncSocketIO.s_config.retryIntervalSeconds);
+
+      const timer_timeout = setTimeout(()=>{
+        this.goodbyeInternal(`timeout ${SyncSocketIO.s_config.timeoutSeconds} sec.`);
+        reject("timeout");
+      }, 1000 * SyncSocketIO.s_config.timeoutSeconds);
 
       this.m_ackMessage
       .pipe(mergeMap((x)=>{
@@ -264,12 +289,14 @@ export class SyncSocketIO {
       }))
       .pipe(take(1))
       .subscribe(()=>{
-        clearInterval(timer);
+        clearInterval(timer_retry);
+        clearTimeout(timer_timeout);
         this.log(`emit (${index}) : success`);
         resolve(index);
       },
       (err)=>{
-        clearInterval(timer);
+        clearInterval(timer_retry);
+        clearTimeout(timer_timeout);
         this.log(`emit (${index}) : error`);
         reject(err);
       },
