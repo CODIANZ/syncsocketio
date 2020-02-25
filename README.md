@@ -153,3 +153,11 @@ syncsocketio.onUnsolicitedMessage("sayonara!", ()=>{
     syncsocketio.goodbye();
 });
 ```
+
+## 実装例（テンプレート）
+
+実装例を兼ねたテンプレートは下記リポジトリにて公開していますので参考にしてください。
+
+* サーバ側の実装 ... https://github.com/codianz/templ.webapp_socket_server
+
+* クライアント側の実装 ... https://github.com/codianz/templ.webapp_client
