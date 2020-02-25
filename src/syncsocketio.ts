@@ -78,7 +78,7 @@ export class SyncSocketIO {
   }
 
   /* クライアントからの接続 */
-  public static connect(socket: SocketIOClient.Socket){
+  public static connect(socket: socketio_t){
     const sessionId = uuid();
     const ss = new SyncSocketIO(socket, sessionId);
     let bFirst = true;

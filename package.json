@@ -1,6 +1,6 @@
 {
   "name": "syncsocketio",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "'syncsocketio' makes ensurly reach the messages and treat the solicited messages.",
   "main": "./dist/syncsocketio.js",
   "scripts": {
@@ -17,6 +17,7 @@
   "bugs": {
     "url": "https://github.com/codianz/syncsocketio/issues"
   },
+  "author": "terukazu.inoue@codianz.com",
   "keywords": [
     "socket.io",
     "wrap",
@@ -38,10 +39,13 @@
     "@types/uuid": "^3.4.5",
     "express": "^4.17.1",
     "jquery": "^3.4.1",
-    "socket.io": "^2.2.0",
     "ts-loader": "^6.2.0",
     "typescript": "^3.6.4",
     "webpack": "^4.41.1",
     "webpack-cli": "^3.3.9"
+  },
+  "optionalDependencies": {
+    "socket.io": "^2.3.0",
+    "socket.io-client": "^2.3.0"
   }
 }
