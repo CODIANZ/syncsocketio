@@ -10,7 +10,7 @@ type message_t = {
   type:   messageType_t,              /* "type" is a message "solicited" or "unsolicited" */
   solicitedMessgeIndex?: number,      /* the number which is the index of "solicitedMessage" for "solicitedResponse" */
   event:  string,                     /* "event which uses socket.io */
-  body:   string                      /* "body" which uses socket.io */
+  body:   any                         /* "body" which uses socket.io */
 };
 
 type ack_t = {
@@ -28,8 +28,8 @@ type config_t = {
   retryIntervalSeconds: number
 }
 
-//type socketio_t = Socketio.Socket | SocketIOClient.Socket;
-type socketio_t = any;
+type socketio_t = Socketio.Socket | SocketIOClient.Socket;
+//type socketio_t = any;
 
 export class SyncSocketIO {
   private static s_sockets: {[_:string]: SyncSocketIO} = {};
@@ -166,58 +166,70 @@ export class SyncSocketIO {
     }
   }
 
-  public onUnsolicitedMessageAll(f:(_: message_t)=>void){
+  public onUnsolicitedMessage(event: string, f:(body: any)=>void){
     this.m_message
-    .pipe(mergeMap((x)=>{
-      if(x.type != "unsolicitedMessage") return never();
-      return of(x);
+    .pipe(map((x)=>{
+      if(x.type != "unsolicitedMessage") return undefined;
+      if(x.event != event) return undefined;
+      return x;
     }))
     .subscribe((x)=>{
-      f(x);
-    },
-    (err)=>{
-      this.log(`onUnsolicitedMessageAll: ${err}`)
-    });
-  }
-
-  public onSolcitedMessageAll(f:(_: message_t)=>void){
-    this.m_message
-    .pipe(mergeMap((x)=>{
-      if(x.type != "solicitedMessage") return never();
-      return of(x);
-    }))
-    .subscribe((x)=>{
-      f(x);
-    },
-    (err)=>{
-      this.log(`onSolcitedMessageAll: ${err}`)
-    });
-  }
-
-  public onUnsolicitedMessage(event: string, f:(_:any)=>void){
-    this.m_message
-    .pipe(mergeMap((x)=>{
-      if(x.type != "unsolicitedMessage") return never();
-      if(x.event != event) return never();
-      return of(x);
-    }))
-    .subscribe((x)=>{
-      f(x.body);
+      if(x){
+        f(x.body);
+      }
     },
     (err)=>{
       this.log(`onUnsolicitedMessage: ${err}`)
     });
   }
 
-  public onSolcitedMessage(event: string, f:(index: number, _:any)=>void){
+  public onSolcitedMessage(event: string, f:(index: number, body: any)=>void){
     this.m_message
-    .pipe(mergeMap((x)=>{
-      if(x.type != "solicitedMessage") return never();
-      if(x.event != event) return never();
-      return of(x);
+    .pipe(map((x)=>{
+      if(x.type != "solicitedMessage") return undefined;
+      if(x.event != event) return undefined;
+      return x;
     }))
     .subscribe((x)=>{
-      f(x.index, x.body);
+      if(x){
+        f(x.index, x.body);
+      }
+    },
+    (err)=>{
+      this.log(`onSolcitedMessage: ${err}`)
+    });
+  }
+
+  public onUnsolicitedMessageRegex(eventExpr: string, f:(event: string, body: any)=>void){
+    const expr = new RegExp(eventExpr);
+    this.m_message
+    .pipe(map((x)=>{
+      if(x.type != "unsolicitedMessage") return undefined;
+      if(!expr.test(x.event)) return undefined;
+      return x;
+    }))
+    .subscribe((x)=>{
+      if(x){
+        f(x.event, x.body);
+      }
+    },
+    (err)=>{
+      this.log(`onUnsolicitedMessage: ${err}`)
+    });
+  }
+
+  public onSolcitedMessageRegex(eventExpr: string, f:(index: number, event: string, body: any)=>void){
+    const expr = new RegExp(eventExpr);
+    this.m_message
+    .pipe(map((x)=>{
+      if(x.type != "solicitedMessage") return undefined;
+      if(!expr.test(x.event)) return undefined;
+      return x;
+    }))
+    .subscribe((x)=>{
+      if(x){
+        f(x.index, x.event, x.body);
+      }
     },
     (err)=>{
       this.log(`onSolcitedMessage: ${err}`)
