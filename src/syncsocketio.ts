@@ -59,6 +59,10 @@ export class SyncSocketIO {
   private m_pendingSolicitedMessages: {[_:number]: message_t} = {};
   public get PendingSolicitedMessages() { return this.m_pendingSolicitedMessages; }
 
+  private m_tag: any = null;
+  public get Tag() { return this.m_tag; }
+  public set Tag(tag: any) { this.m_tag = tag; }
+
   public get SessionId() { return this.m_sessionId; }
 
   /* サーバ側の接続待機 */
