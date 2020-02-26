@@ -34,6 +34,12 @@ type socketio_t = any;
 export class SyncSocketIO {
   private static s_sockets: {[_:string]: SyncSocketIO} = {};
   public static get Sockets() { return SyncSocketIO.s_sockets; }
+  public static findBySessionId(sessionId: string){
+    if(sessionId in this.Sockets){
+      return this.Sockets[sessionId];
+    }
+    return null;
+  }
 
   private static s_config: config_t = {
     bEnableLog: false,
@@ -52,6 +58,10 @@ export class SyncSocketIO {
 
   private m_pendingSolicitedMessages: {[_:number]: message_t} = {};
   public get PendingSolicitedMessages() { return this.m_pendingSolicitedMessages; }
+
+  private m_tag: any = null;
+  public get Tag() { return this.m_tag; }
+  public set Tag(tag: any) { this.m_tag = tag; }
 
   public get SessionId() { return this.m_sessionId; }
 
@@ -229,7 +239,7 @@ export class SyncSocketIO {
   }
 
   public emitSolicitedMessageAndWaitResponse(event: string, body?: any){
-    return new Promise((resolve, reject)=>{
+    return new Promise<{event:string, body: string}>((resolve, reject)=>{
       const targetIndex = this.m_messageIndex + 1;
       this.m_message
       .pipe(mergeMap((x)=>{
@@ -261,7 +271,7 @@ export class SyncSocketIO {
     const index = this.m_messageIndex;
     this.log(`emit (${index})`);
 
-    return new Promise((resolve, reject)=>{
+    return new Promise<void>((resolve, reject)=>{
       const message: message_t = {
         index:  index,
         type:   type,
@@ -292,7 +302,7 @@ export class SyncSocketIO {
         clearInterval(timer_retry);
         clearTimeout(timer_timeout);
         this.log(`emit (${index}) : success`);
-        resolve(index);
+        resolve(void 0);
       },
       (err)=>{
         clearInterval(timer_retry);
