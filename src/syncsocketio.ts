@@ -34,6 +34,12 @@ type socketio_t = any;
 export class SyncSocketIO {
   private static s_sockets: {[_:string]: SyncSocketIO} = {};
   public static get Sockets() { return SyncSocketIO.s_sockets; }
+  public static findBySessionId(sessionId: string){
+    if(sessionId in this.Sockets){
+      return this.Sockets[sessionId];
+    }
+    return null;
+  }
 
   private static s_config: config_t = {
     bEnableLog: false,
