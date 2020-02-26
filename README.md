@@ -1,5 +1,11 @@
 # syncsocketio
 
+[![npm](https://img.shields.io/npm/v/syncsocketio)](https://www.npmjs.com/package/syncsocketio)
+[![Greenkeeper badge](https://badges.greenkeeper.io/greenkeeperio/badges.svg)](https://greenkeeper.io/)
+[![Build Status](https://travis-ci.org/codianz/syncsocketio.png?branch=master)](https://travis-ci.org/codianz/syncsocketio)
+[![Dependency Status](https://img.shields.io/david/codianz/syncsocketio.svg?style=flat-square)](https://david-dm.org/codianz/syncsocketio)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ## 概要
 
 一般的に、ネットワーク通信において、請求・請求応答・非請求応答の３種類が存在します。
@@ -85,7 +91,11 @@ syncsocketioは送信したメッセージに対して、内部的にack応答�
 ### 非請求応答は下記のように実装します。
 ```typescript
 /* 非請求応答の受信 */
-syncsocketio.onUnsolicitedMessage("some receive event", (message: any)=>{
+syncsocketio.onUnsolicitedMessage("some receive event", (body: any)=>{
+});
+
+/* 非請求応答の受信（eventを正規表現にて指定） */
+syncsocketio.onUnsolicitedMessageRegex(".*", (event: string, body: any)=>{
 });
 
 /* 非請求応答の送信 */
@@ -109,7 +119,21 @@ syncsocketio.emitSolicitedMessageAndWaitResponse("solicited message", messagebod
 
 ### 請求の応答および請求応答の送信は下記のように実装します。
 ```typescript
-syncsocketio.onSolcitedMessage("solicited message", (index: number, messagebody: any) => {
+syncsocketio.onSolcitedMessage("solicited message", (index: number, body: any) => {
+    /* index はどの請求かを特定するために使用するのでそのまま emitSolicitedResponse() に渡してください */
+
+    /* 請求に対する応答を送信します */
+    syncsocketio.emitSolicitedResponse(index, "event type", responsebody)
+    .then(()=>{
+        /* 成功 */
+    })
+    .catch(()=>{
+        /* 失敗 */
+    });
+});
+
+/* onSolicitedMessageRegexでは正規表現で請求応答することが可能です */
+syncsocketio.onSolcitedMessageRegex(".*", (index: number, event: string, body: any) => {
     /* index はどの請求かを特定するために使用するのでそのまま emitSolicitedResponse() に渡してください */
 
     /* 請求に対する応答を送信します */
