@@ -91,7 +91,11 @@ syncsocketioは送信したメッセージに対して、内部的にack応答�
 ### 非請求応答は下記のように実装します。
 ```typescript
 /* 非請求応答の受信 */
-syncsocketio.onUnsolicitedMessage("some receive event", (message: any)=>{
+syncsocketio.onUnsolicitedMessage("some receive event", (body: any)=>{
+});
+
+/* 非請求応答の受信（eventを正規表現にて指定） */
+syncsocketio.onUnsolicitedMessageRegex(".*", (event: string, body: any)=>{
 });
 
 /* 非請求応答の送信 */
@@ -115,7 +119,21 @@ syncsocketio.emitSolicitedMessageAndWaitResponse("solicited message", messagebod
 
 ### 請求の応答および請求応答の送信は下記のように実装します。
 ```typescript
-syncsocketio.onSolcitedMessage("solicited message", (index: number, messagebody: any) => {
+syncsocketio.onSolcitedMessage("solicited message", (index: number, body: any) => {
+    /* index はどの請求かを特定するために使用するのでそのまま emitSolicitedResponse() に渡してください */
+
+    /* 請求に対する応答を送信します */
+    syncsocketio.emitSolicitedResponse(index, "event type", responsebody)
+    .then(()=>{
+        /* 成功 */
+    })
+    .catch(()=>{
+        /* 失敗 */
+    });
+});
+
+/* onSolicitedMessageRegexでは正規表現で請求応答することが可能です */
+syncsocketio.onSolcitedMessageRegex(".*", (index: number, event: string, body: any) => {
     /* index はどの請求かを特定するために使用するのでそのまま emitSolicitedResponse() に渡してください */
 
     /* 請求に対する応答を送信します */
