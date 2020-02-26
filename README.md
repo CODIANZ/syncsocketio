@@ -3,7 +3,7 @@
 [![npm](https://img.shields.io/npm/v/syncsocketio)](https://www.npmjs.com/package/syncsocketio)
 [![Build Status](https://travis-ci.org/codianz/syncsocketio.png?branch=master)](https://travis-ci.org/codianz/syncsocketio)
 [![Dependency Status](https://img.shields.io/david/codianz/syncsocketio.svg?style=flat-square)](https://david-dm.org/codianz/syncsocketio)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## 概要
 
