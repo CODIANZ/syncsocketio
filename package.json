@@ -1,6 +1,6 @@
 {
   "name": "syncsocketio",
-  "version": "0.3.3",
+  "version": "1.0.0",
   "description": "'syncsocketio' makes ensurly reach the messages and treat the solicited messages.",
   "main": "./dist/syncsocketio.js",
   "scripts": {
@@ -29,14 +29,14 @@
   ],
   "dependencies": {
     "rxjs": "^6.5.4",
-    "uuid": "^7.0.0"
+    "uuid": "^7.0.1"
   },
   "devDependencies": {
     "@types/express": "^4.17.2",
     "@types/jquery": "^3.3.33",
     "@types/socket.io": "^2.1.4",
     "@types/socket.io-client": "^1.4.32",
-    "@types/uuid": "^3.4.7",
+    "@types/uuid": "^7.0.0",
     "express": "^4.17.1",
     "jquery": "^3.4.1",
     "ts-loader": "^6.2.1",
