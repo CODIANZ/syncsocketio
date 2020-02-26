@@ -2,7 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/syncsocketio)](https://www.npmjs.com/package/syncsocketio)
 [![Greenkeeper badge](https://badges.greenkeeper.io/greenkeeperio/badges.svg)](https://greenkeeper.io/)
-[![Build Status](https://travis-ci.org/codianz/syncsocketio.png?branch=develop)](https://travis-ci.org/codianz/syncsocketio)
+[![Build Status](https://travis-ci.org/codianz/syncsocketio.png?branch=master)](https://travis-ci.org/codianz/syncsocketio)
 [![Dependency Status](https://img.shields.io/david/codianz/syncsocketio.svg?style=flat-square)](https://david-dm.org/codianz/syncsocketio)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
