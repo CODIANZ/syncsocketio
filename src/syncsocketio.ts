@@ -229,7 +229,7 @@ export class SyncSocketIO {
   }
 
   public emitSolicitedMessageAndWaitResponse(event: string, body?: any){
-    return new Promise((resolve, reject)=>{
+    return new Promise<{event:string, body: string}>((resolve, reject)=>{
       const targetIndex = this.m_messageIndex + 1;
       this.m_message
       .pipe(mergeMap((x)=>{
@@ -261,7 +261,7 @@ export class SyncSocketIO {
     const index = this.m_messageIndex;
     this.log(`emit (${index})`);
 
-    return new Promise((resolve, reject)=>{
+    return new Promise<void>((resolve, reject)=>{
       const message: message_t = {
         index:  index,
         type:   type,
@@ -292,7 +292,7 @@ export class SyncSocketIO {
         clearInterval(timer_retry);
         clearTimeout(timer_timeout);
         this.log(`emit (${index}) : success`);
-        resolve(index);
+        resolve(void 0);
       },
       (err)=>{
         clearInterval(timer_retry);
