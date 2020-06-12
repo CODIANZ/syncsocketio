@@ -55,7 +55,7 @@ export class SyncSocketIO {
   private m_lastReceiveMessageIndex: number = 0;
   private m_ackMessage = new Subject<ack_t>();
   private m_message = new Subject<message_t>();
-  private m_bFirst = false; /* for client */
+  private m_bFirst = true; /* for client */
 
   private m_pendingSolicitedMessages: {[_:number]: message_t} = {};
   public get PendingSolicitedMessages() { return this.m_pendingSolicitedMessages; }
