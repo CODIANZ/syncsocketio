@@ -46,8 +46,8 @@ export class SyncSocketIO {
     timeoutSeconds: 15,
     retryIntervalSeconds: 5
   };
-  public set Config(config: config_t) { SyncSocketIO.s_config = config; }
-  public get Config() { return SyncSocketIO.s_config; }
+  public static set Config(config: config_t) { SyncSocketIO.s_config = config; }
+  public static get Config() { return SyncSocketIO.s_config; }
 
   private m_socketio: socketio_t;
   private m_sessionId: string;
