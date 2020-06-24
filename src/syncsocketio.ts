@@ -41,22 +41,13 @@ export class SyncSocketIO {
     return null;
   }
 
-  private static s_config: config_t = {
+  public static s_config: config_t = {
     bEnableLog: false,
     timeoutSeconds: 15,
     retryIntervalSeconds: 5
   };
-  public static setConfig(opt: {
-    bEnableLog?: boolean;
-    timeoutSeconds?: number;
-    retryIntervalSeconds?: number;
-  })
-  {
-    if(opt.bEnableLog           ) SyncSocketIO.s_config.bEnableLog            = opt.bEnableLog; 
-    if(opt.timeoutSeconds       ) SyncSocketIO.s_config.timeoutSeconds        = opt.timeoutSeconds; 
-    if(opt.retryIntervalSeconds ) SyncSocketIO.s_config.retryIntervalSeconds  = opt.retryIntervalSeconds; 
-  }
-  public static getConfig() { return SyncSocketIO.s_config; }
+  public static set Config(config: config_t) { SyncSocketIO.s_config = config; }
+  public static get Config() { return SyncSocketIO.s_config; }
 
   private m_socketio: socketio_t;
   private m_sessionId: string;

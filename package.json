@@ -1,6 +1,6 @@
 {
   "name": "syncsocketio",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "'syncsocketio' makes ensurly reach the messages and treat the solicited messages.",
   "main": "./dist/syncsocketio.js",
   "scripts": {
